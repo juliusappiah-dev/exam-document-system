@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Exam Document Generator</title>
+    <!-- Modern CSS frameworks -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4cc9f0;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+        }
+        
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .form-select, .form-control {
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        #preview {
+            transition: all 0.3s ease;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 2rem;
+            height: 2rem;
+            border: 0.25rem solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="header text-center">
+                    <h1 class="fw-bold mb-3">
+                        <i class="bi bi-qr-code me-2"></i>Exam Document Generator
+                    </h1>
+                    <p class="mb-0">Create customized QR documents for your examination process</p>
+                </div>
+                
+                <div class="card p-4 mb-4">
+                    <form id="qrForm">
+                        <div class="mb-4">
+                            <label for="center" class="form-label fw-semibold">Exam Center</label>
+                            <select id="center" class="form-select" required>
+                                <option value="" disabled selected>Select Exam Center</option>
+                                <!-- Filled via AJAX -->
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="subject" class="form-label fw-semibold">Subject</label>
+                            <select id="subject" class="form-select" required>
+                                <option value="" disabled selected>Select Subject</option>
+                                <!-- Filled via AJAX -->
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="batch" class="form-label fw-semibold">Batch</label>
+                            <select id="batch" class="form-select" required>
+                                <option value="" disabled selected>Select Batch</option>
+                                <!-- Filled via AJAX -->
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <span id="submitText">Generate QR Document</span>
+                                <span id="submitSpinner" class="loading-spinner ms-2"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div id="preview" class="card p-4 d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="fw-bold mb-0">
+                            <i class="bi bi-eye-fill me-2"></i>Document Preview
+                        </h3>
+                        <button id="printBtn" class="btn btn-success">
+                            <i class="bi bi-printer-fill me-2"></i>Print Document
+                        </button>
+                    </div>
+                    
+                    <div class="card border-0 bg-light p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-4 text-center">
+                                <img id="qrImage" src="" class="img-fluid mb-3" style="max-width: 200px;">
+                            </div>
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="badge bg-primary me-3">Serial</span>
+                                    <h4 id="serial" class="mb-0 fw-bold"></h4>
+                                </div>
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="badge bg-primary me-3">Center</span>
+                                    <h5 id="previewCenter" class="mb-0"></h5>
+                                </div>
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="badge bg-primary me-3">Subject</span>
+                                    <h5 id="previewSubject" class="mb-0"></h5>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-primary me-3">Batch</span>
+                                    <h5 id="previewBatch" class="mb-0"></h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern JavaScript libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="admin.js"></script>
+    
+    <script>
+        // You might want to move this to admin.js
+        document.getElementById('qrForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = document.querySelector('#qrForm button[type="submit"]');
+            const submitText = document.getElementById('submitText');
+            const spinner = document.getElementById('submitSpinner');
+            
+            submitText.textContent = 'Generating...';
+            spinner.style.display = 'inline-block';
+            submitBtn.disabled = true;
+            
+            // Simulate API call (replace with actual AJAX call)
+            setTimeout(() => {
+                // This would be replaced with your actual generation logic
+                document.getElementById('preview').classList.remove('d-none');
+                document.getElementById('serial').textContent = 'EX-' + Math.floor(Math.random() * 10000);
+                document.getElementById('previewCenter').textContent = document.getElementById('center').value;
+                document.getElementById('previewSubject').textContent = document.getElementById('subject').value;
+                document.getElementById('previewBatch').textContent = document.getElementById('batch').value;
+                
+                // Reset button state
+                submitText.textContent = 'Generate QR Document';
+                spinner.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                // Scroll to preview
+                document.getElementById('preview').scrollIntoView({ behavior: 'smooth' });
+            }, 1500);
+        });
+        
+        document.getElementById('printBtn').addEventListener('click', function() {
+            // Implement print functionality
+            window.print();
+        });
+    </script>
+</body>
+</html>
