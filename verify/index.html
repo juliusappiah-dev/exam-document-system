@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Document Verification</title>
+    <!-- Modern CSS frameworks -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --warning-color: #f8961e;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+        }
+        
+        .verification-header {
+            background: linear-gradient(135deg, var(--primary-color), #3a0ca3);
+            color: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(58, 12, 163, 0.15);
+        }
+        
+        .scanner-card {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+            border: none;
+        }
+        
+        #qr-video {
+            width: 100%;
+            height: auto;
+            background: #000;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: linear-gradient(
+                to right,
+                transparent 20%,
+                rgba(255, 255, 255, 0.1) 20%,
+                rgba(255, 255, 255, 0.1) 80%,
+                transparent 80%
+            ),
+            linear-gradient(
+                to bottom,
+                transparent 20%,
+                rgba(255, 255, 255, 0.1) 20%,
+                rgba(255, 255, 255, 0.1) 80%,
+                transparent 80%
+            );
+        }
+        
+        .scanner-container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .verification-status {
+            transition: all 0.3s ease;
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+        }
+        
+        .verification-status.show {
+            opacity: 1;
+            height: auto;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            border-radius: 12px;
+        }
+        
+        .status-valid {
+            background-color: rgba(76, 201, 240, 0.1);
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .status-invalid {
+            background-color: rgba(247, 37, 133, 0.1);
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .status-tampered {
+            background-color: rgba(248, 150, 30, 0.1);
+            border-left: 4px solid var(--warning-color);
+        }
+        
+        .detail-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-top: 1rem;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .manual-entry {
+            background: rgba(67, 97, 238, 0.05);
+            border-radius: 0 0 12px 12px;
+            padding: 1.5rem;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .btn-verify {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            width: 100%;
+        }
+        
+        .btn-verify:hover {
+            background-color: #3a0ca3;
+        }
+        
+        .camera-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4 py-lg-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="verification-header text-center">
+                    <h1 class="fw-bold mb-3">
+                        <i class="bi bi-shield-check me-2"></i>Secure Document Verification
+                    </h1>
+                    <p class="mb-0">Verify the authenticity of examination documents using QR code scanning</p>
+                </div>
+                
+                <div class="scanner-card">
+                    <!-- Scanner Section -->
+                    <div class="scanner-container">
+                        <video id="qr-video" playsinline></video>
+                        <div class="scanner-overlay"></div>
+                    </div>
+                    <p class="text-center text-muted py-3 mb-0">
+                        <i class="bi bi-upc-scan me-2"></i>Position QR code within frame
+                    </p>
+                    
+                    <!-- Camera Controls -->
+                    <div class="camera-controls px-4">
+                        <select id="camera-select" class="form-select form-select-sm me-2" style="flex: 1;">
+                            <option value="">Select Camera</option>
+                        </select>
+                        <button id="toggle-camera" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Manual Entry -->
+                    <div class="manual-entry">
+                        <div class="d-flex align-items-center mb-3">
+                            <hr style="flex: 1;">
+                            <span class="px-3 text-muted">OR</span>
+                            <hr style="flex: 1;">
+                        </div>
+                        
+                        <label class="form-label fw-semibold">Enter document serial manually</label>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">
+                                <i class="bi bi-key"></i>
+                            </span>
+                            <input type="text" id="manual-serial" class="form-control" placeholder="DOC-XXXX-XXXX" aria-label="Document serial">
+                        </div>
+                        <button id="manual-submit" class="btn btn-verify">
+                            <i class="bi bi-check-circle me-2"></i>Verify Document
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Verification Results -->
+                <div id="result" class="verification-status">
+                    <div class="d-flex align-items-center mb-3">
+                        <h3 class="fw-bold mb-0" id="status-text"></h3>
+                        <span id="status-icon" class="ms-auto fs-1"></span>
+                    </div>
+                    <p id="status-message" class="mb-0"></p>
+                </div>
+                
+                <!-- Document Details -->
+                <div id="details" class="detail-card d-none">
+                    <h4 class="fw-semibold mb-3">
+                        <i class="bi bi-card-text me-2"></i>Document Details
+                    </h4>
+                    <div id="detail-items">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern JavaScript libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="verify.js"></script>
+    
+    <script>
+        // Enhanced verification logic would go here
+        // This is just placeholder UI interaction
+        document.getElementById('manual-submit').addEventListener('click', function() {
+            const serial = document.getElementById('manual-serial').value;
+            if (!serial) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Serial',
+                    text: 'Please enter a document serial number',
+                    confirmButtonColor: '#4361ee'
+                });
+                return;
+            }
+            
+            // Simulate verification
+            simulateVerification(serial);
+        });
+        
+        function simulateVerification(serial) {
+            const resultEl = document.getElementById('result');
+            const detailsEl = document.getElementById('details');
+            const statusText = document.getElementById('status-text');
+            const statusIcon = document.getElementById('status-icon');
+            const statusMessage = document.getElementById('status-message');
+            
+            // Show loading state
+            resultEl.className = 'verification-status show';
+            statusText.textContent = 'Verifying...';
+            statusIcon.innerHTML = '<i class="bi bi-hourglass-split text-secondary"></i>';
+            statusMessage.textContent = 'Checking document authenticity';
+            detailsEl.classList.add('d-none');
+            
+            // Simulate API call
+            setTimeout(() => {
+                // Random result for demo (replace with actual verification)
+                const status = Math.random() > 0.3 ? 
+                              (Math.random() > 0.5 ? 'valid' : 'tampered') : 'invalid';
+                
+                // Set appropriate UI
+                if (status === 'valid') {
+                    resultEl.classList.add('status-valid');
+                    statusText.textContent = 'Document Valid';
+                    statusIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                    statusMessage.textContent = 'This document is authentic and verified';
+                    
+                    // Show details
+                    detailsEl.classList.remove('d-none');
+                    const detailItems = document.getElementById('detail-items');
+                    detailItems.innerHTML = `
+                        <div class="detail-item">
+                            <span class="text-muted">Document Serial</span>
+                            <strong>${serial}</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span class="text-muted">Exam Center</span>
+                            <strong>Central Examination Hall</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span class="text-muted">Subject</span>
+                            <strong>Advanced Mathematics</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span class="text-muted">Batch</span>
+                            <strong>2023-24</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span class="text-muted">Issued On</span>
+                            <strong>${new Date().toLocaleDateString()}</strong>
+                        </div>
+                    `;
+                } 
+                else if (status === 'tampered') {
+                    resultEl.classList.add('status-tampered');
+                    statusText.textContent = 'Document Tampered';
+                    statusIcon.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-warning"></i>';
+                    statusMessage.textContent = 'This document shows signs of alteration';
+                } 
+                else {
+                    resultEl.classList.add('status-invalid');
+                    statusText.textContent = 'Document Invalid';
+                    statusIcon.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+                    statusMessage.textContent = 'No matching document found in our records';
+                }
+                
+                // Scroll to results
+                resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
